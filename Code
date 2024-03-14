@@ -1,0 +1,607 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <sstream> 
+#include <iomanip>
+#define RED "\033[1;31m"
+#define RESET "\033[0m"
+
+using namespace std;
+
+
+class UserAccountNode {
+public:
+    // Attributes
+    string userName;
+    string email;
+    string password;
+    UserAccountNode* next;
+
+    // Constructor
+    UserAccountNode(const string& name, const string& userEmail, const string& userPassword) {
+        this->userName = name;
+        this->email = userEmail;
+        this->password = userPassword;
+    }
+};
+
+class UserAccountLinkedList {
+private:
+    UserAccountNode* head;
+    int nextUserId =100;
+
+    // Function to save user account details to a file
+    void saveToFile(const string& filename) {
+        ofstream outFile(filename);
+
+        if (!outFile) {
+            cerr << "Error opening the file: " << filename << endl;
+            return;
+        }
+
+        UserAccountNode* current = head;
+        while (current) {
+            outFile << current->userName << "," << current->email << "," << current->password << endl;
+            current = current->next;
+        }
+        outFile.close();
+    }
+
+    // Function to load user account details from a file
+    void loadFromFile(const string& filename) {
+        ifstream inFile(filename);
+
+        if (!inFile) {
+            cerr << "Error opening the file: " << filename << endl;
+            return;
+        }
+
+        string line;
+        while (getline(inFile, line)) {
+            istringstream iss(line);
+            string name, email, password;
+
+            getline(iss, name, ',');
+            getline(iss, email, ',');
+            getline(iss, password, ',');
+
+            OpenAccount(name, email, password);
+        }
+
+        inFile.close();
+    }
+
+public:
+    // Constructor
+    UserAccountLinkedList() : head(nullptr), nextUserId(100) {
+        loadFromFile("user_details.txt");
+    }
+    // Load File data at the begining.
+    void OpenAccount(const string& name, const string& email, const string& password) {
+        UserAccountNode* newNode = new UserAccountNode(name, email, password);
+        newNode->next = nullptr;
+
+        if (!head) {
+            // If the list is empty, make the new node the head
+            head = newNode;
+        }
+        else {
+            // Traverse to the end and add the new node
+            UserAccountNode* current = head;
+            while (current->next) {
+                current = current->next;
+            }
+            current->next = newNode;
+        }
+         nextUserId++;
+
+        // Save user details to file after creating a new account
+        saveToFile("user_details.txt");
+    }
+
+    // Function to create a new user account at the end
+    void createAccount(const string& name, const string& email, const string& password) {
+        UserAccountNode* newNode = new UserAccountNode(name, email, password);
+        newNode->next = nullptr;
+
+        if (!head) {
+            // If the list is empty, make the new node the head
+            head = newNode;
+        }
+        else {
+            // Traverse to the end and add the new node
+            UserAccountNode* current = head;
+            while (current->next) {
+                current = current->next;
+            }
+            current->next = newNode;
+        }
+
+        // Display the User ID and a reminder message during creation
+        cout << "--------------------------------------" << endl;
+        cout <<"\n" <<RED<< "User account created with ID: " << nextUserId <<RESET<< endl;
+        cout << "Remember this for future reference.\n" << endl;
+
+        // Increment the user ID for the next account
+        nextUserId++;
+
+        // Save user details to file after creating a new account
+        saveToFile("user_details.txt");
+    }
+
+    // Function to validate user credentials
+    bool validateUserCredentials(int userId, const string& password) {
+        UserAccountNode* current = head;
+        int currentUserId = 100; // Start with the first user ID
+
+        while (current && currentUserId != userId) {
+            current = current->next;
+            currentUserId++;
+        }
+
+        return (current && current->password == password);
+    }
+
+    // Function to get the user's name based on user ID
+    string getUserName(int userId) {
+        UserAccountNode* current = head;
+        int currentUserId = 100; // Start with the first user ID
+
+        while (current && currentUserId != userId) {
+            current = current->next;
+            currentUserId++;
+        }
+
+        if (current) {
+            return current->userName;
+        }
+        else {
+            return ""; // Return an empty string if the user is not found
+        }
+    }
+
+    // Function to display a welcome message with the user's name
+    void displayWelcomeMessage(int userId) {
+        string userName = getUserName(userId);
+        if (!userName.empty()) {
+            cout << "\n***************************" << endl;
+            cout << "WELCOME " << userName << "!" << endl;
+            cout << "***************************" << endl;
+        }
+    }
+
+    // Function to display a single user
+    void displayUser(int userId) {
+        UserAccountNode* current = head;
+        int currentUserId = 100; // Start with the first user ID
+
+        while (current && currentUserId != userId) {
+            current = current->next;
+            currentUserId++;
+        }
+
+        if (current) {
+            cout << "User ID: " << userId << ", Name: " << current->userName << ", Email: " << current->email << endl;
+        }
+        else {
+            cout << "User not found." << endl;
+        }
+    }
+
+    // Function to display the linked list with user IDs
+    void displayList() {
+        UserAccountNode* current = head;
+        int currentUserId = 100; // Start with the first user ID
+        while (current) {
+            cout << "User ID: " << currentUserId << ", Name: " << current->userName << ", Email: " << current->email << endl;
+            current = current->next;
+            currentUserId++;
+        }
+    }
+
+    void editUserDetails(int userId, const string& newName, const string& newEmail, const string& newPassword) {
+        UserAccountNode* current = head;
+        int currentUserId = 100;
+
+        while (current && currentUserId != userId) {
+            current = current->next;
+            currentUserId++;
+        }
+
+        if (current) {
+            // Update user details
+            current->userName = newName;
+            current->email = newEmail;
+            current->password = newPassword;
+
+            cout << "User details updated successfully." << endl;
+
+            // Save updated user details to file
+            saveToFile("user_details.txt");
+        }
+        else {
+            cout << "User not found." << endl;
+        }
+    }
+};
+
+bool adminLogin() {
+    string adminPassword;
+    cout << "Enter Admin Password: ";
+    cin >> adminPassword;
+
+    return (adminPassword == "admin123");
+}
+
+class Room {
+private:
+    int roomNumber;
+    bool isOccupied;
+    double price;
+    int checkInYear;
+    int checkInMonth;
+    int checkInDay;
+    int occupiedBy;
+
+public:
+    Room(int number, double roomPrice) {
+        roomNumber = number;
+        isOccupied = false;
+        price = roomPrice;
+        occupiedBy = 0;
+        checkInYear = 0;
+        checkInMonth = 0;
+        checkInDay = 0;
+    }
+
+    int getRoomNumber()  {
+        return roomNumber;
+    }
+
+    bool getIsOccupied()  {
+        return isOccupied;
+    }
+
+    void setIsOccupied(bool occupied) {
+        isOccupied = occupied;
+    }
+
+    double getPrice()  {
+        return price;
+    }
+
+    void setPrice(double newPrice) {
+        price = newPrice;
+    }
+    
+    void setOccupiedBy(int idx) {
+        occupiedBy = idx;
+    }
+
+    int getOccupiedBy() {
+        return occupiedBy;
+    }
+
+    void setCheckInDate(int year, int month, int day) {
+        checkInYear = year;
+        checkInMonth = month;
+        checkInDay = day;
+    }
+
+    void displayCheckInDate()  {
+        cout << "Check-in Date: " << setw(2) << setfill('0') << checkInDay << "/"
+            << setw(2) << setfill('0') << checkInMonth << "/" << checkInYear << endl;
+    }
+};
+    
+class Hotel:private UserAccountLinkedList{
+private:
+    vector<Room> rooms;
+    string adminPassword;
+    int numOfRooms;
+
+public:
+    Hotel(int numRooms, string password) {
+        adminPassword = password;
+        numOfRooms = numRooms;
+        double basePrice = 100.0;
+        for (int i = 0; i < numOfRooms; ++i) {
+            Room newRoom(i + 1, basePrice+rand()%100);
+            rooms.push_back(newRoom);
+        }
+    }
+
+    void displayAvailableRooms()  {
+        cout << "Available Rooms:" << endl;
+        for (int i = 0; i < numOfRooms;i++) {
+            if (!rooms[i].getIsOccupied()) {
+                cout << "Room Number: " << rooms[i].getRoomNumber() << endl;
+            }
+        }
+    }
+
+    void displayOccupiedByList() {
+        for (int i = 0; i < numOfRooms; i++) {
+            if (rooms[i].getIsOccupied()) {
+                cout << "Room "<< rooms[i].getRoomNumber() << "--->" <<"User ID : " << rooms[i].getOccupiedBy() << endl;
+            }
+            if (!rooms[i].getIsOccupied()) {
+                cout << "Room " << rooms[i].getRoomNumber() << "--->" << "No reservation yet" << endl;
+            }
+        }
+    }
+
+    void displayRoomPrices()  {
+        cout << "Room Prices:" << endl;
+        for (int i = 0; i < numOfRooms; i++) {
+            cout << "Room Number: " << rooms[i].getRoomNumber() << " - Price: $" << rooms[i].getPrice() << endl;
+        }
+    }
+
+    void bookRoom(int roomNumber) {
+        for (int i = 0; i < numOfRooms; i++) {
+            if (rooms[i].getRoomNumber() == roomNumber && !rooms[i].getIsOccupied()) {
+                rooms[i].setIsOccupied(true);
+                UserAccountLinkedList newmember;
+                int id;
+                cout << "What is your Id?" << endl;
+                cin >> id;
+                cout << "Welcome "<< newmember.getUserName(id) << endl;
+                rooms[i].setOccupiedBy(id);
+                int year, month, day;
+                cout << "Enter staying year: ";
+                cin >> year;
+                cout << "Enter staying month: ";
+                cin >> month;
+                cout << "Enter staying day: ";
+                cin >> day;
+                rooms[i].setCheckInDate(year, month, day);
+
+                cout << "Room " << roomNumber << " has been booked." << endl;
+                cout << "Check-in Date set to: ";
+                rooms[i].displayCheckInDate();
+                return;
+            }
+        }
+        cout << "Room " << roomNumber << " is not available." << endl;
+    }
+
+    void cancelBooking(int roomNumber) {
+        for (int i = 0; i < numOfRooms; i++) {
+            if (rooms[i].getRoomNumber() == roomNumber && rooms[i].getIsOccupied()) {
+                rooms[i].setIsOccupied(false);
+                cout << "Booking for Room " << roomNumber << " has been canceled." << endl;
+                return;
+            }
+        }
+        cout << "No booking found for Room " << roomNumber << "." << endl;
+    }
+
+    void changeRoomPrices(string& password) {
+        if (password == adminPassword) {
+            int roomNumber;
+            double newPrice;
+            cout << "Enter room number to change price: ";
+            cin >> roomNumber;
+
+            for (int i = 0; i < numOfRooms; i++) {
+                if (rooms[i].getRoomNumber() == roomNumber) {
+                    cout << "Enter new price for Room " << roomNumber << ": $";
+                    cin >> newPrice;
+                    rooms[i].setPrice(newPrice);
+                    cout << "Price for Room " << roomNumber << " has been updated." << endl;
+                    return;
+                }
+            }
+            cout << "Room " << roomNumber << " not found." << endl;
+        }
+        else {
+            cout << "Access denied! Incorrect password." << endl;
+        }
+    }
+};
+
+void display_main_menu() {
+    cout << "\t\t\t\t*******************************************" << endl;
+    cout <<RED<< "\t\t\t\t   Welcome to the Hotel Managment System" <<RESET<< endl;
+    cout << "\t\t\t\t*******************************************" << endl;
+    cout << "==========================" << endl;
+    cout << "1. User Account" << endl;
+    cout << "2. Admin" << endl;
+    cout << "3. Exit" << endl;
+    cout << "Enter your choice: " << endl;
+    cout << "==========================" << endl;
+}
+
+void display_userAcount_menu() {
+    cout << "\n==========================" << endl;
+    cout << "User Account:" << endl;
+    cout << "1. User Login" << endl;
+    cout << "2. Create User Account" << endl;
+    cout << "3. Exit" << endl;
+    cout << "Enter your choice: " << endl;
+    cout << "==========================" << endl;
+}
+
+void display_user_menu() {
+    cout << "\n==========================" << endl;
+    cout << "User Menu:" << endl;
+    cout << "1. Display User Details" << endl;
+    cout << "2. Edit User Details" << endl;
+    cout << "3. Display available rooms" << endl;
+    cout << "4. Display room prices" << endl;
+    cout << "5. Book a room" << endl;
+    cout << "6. Cancel booking" << endl;
+    cout << "7. exit" << endl;
+    cout << "Enter your choice: " << endl;
+    cout << "==========================" << endl;
+}
+
+void display_admin_menu() {
+    cout << "\n==========================" << endl;
+    cout << "Admin Menu:" << endl;
+    cout << "1.Display User List" << endl;
+    cout << "2.View User Details By ID" << endl;
+    cout << "3.Change room prices" << endl;
+    cout << "4.All room prices" << endl;
+    cout << "5.Check room Owners" << endl;
+    cout << "6.Exit" << endl;
+    cout << "Enter your choice: " << endl;
+    cout << "==========================" << endl;
+}
+
+int main() {
+    UserAccountLinkedList userList;
+    Hotel hotel(9, "admin123"); // Create a hotel with 9 rooms and admin password "admin123"
+    int choice, roomNum;
+    string password;
+
+    while (true) {
+        display_main_menu();
+        cin >> choice;
+
+        if (choice == 1) {
+            // User Account submenu
+            while (true) {
+                display_userAcount_menu();
+                cin >> choice;
+
+                if (choice == 1) {
+                    // User Login
+                    int userId;
+                    string password;
+
+                    cout << "Enter User ID: ";
+                    cin >> userId;
+
+                    cout << "Enter Password: ";
+                    cin >> password;
+
+                    if (userList.validateUserCredentials(userId, password)) {
+                        // Successful login, display welcome message
+                        userList.displayWelcomeMessage(userId);
+
+                        // Display user menu
+                        while (true) {
+                            display_user_menu();
+                            cin >> choice;
+
+                            if (choice == 1) {
+                                userList.displayUser(userId);
+                            }
+                            else if (choice == 2) {
+                                string newName, newEmail, newPassword;
+
+                                cout << "Enter new User Name: ";
+                                cin.ignore(); // Clear the newline character from the buffer
+                                getline(cin, newName);
+
+                                cout << "Enter new User Email: ";
+                                cin >> newEmail;
+
+                                cout << "Enter new User Password: ";
+                                cin >> newPassword;
+
+                                userList.editUserDetails(userId, newName, newEmail, newPassword);
+                            }
+                            else if (choice == 3) {
+                                hotel.displayAvailableRooms();
+                            }
+                            else if (choice == 4) {
+                                hotel.displayRoomPrices();
+                            }
+                            else if (choice == 5) {
+                                cout << "Enter room number to book: ";
+                                cin >> roomNum;
+                                hotel.bookRoom(roomNum);
+                            }
+                            else if (choice == 6) {
+                                cout << "Enter room number to cancel booking: ";
+                                cin >> roomNum;
+                                hotel.cancelBooking(roomNum);
+                            }
+                            else if (choice == 7) {
+                                break;
+                            }
+                            else {
+                                cout << "Invalid choice. Please enter 1 or 2." << endl;
+                            }
+                        }
+                    }
+                    else {
+                        cout << "Invalid User ID or Password. Please try again." << endl;
+                    }
+                }
+                else if (choice == 2) {
+                    // Create User Account
+                    string name, email, newPassword;
+                    cout << "Enter User Name: ";
+                    cin.ignore(); // Clear the newline character from the buffer
+                    getline(cin, name);
+
+                    cout << "Enter User Email: ";
+                    cin >> email;
+
+                    cout << "Enter User Password: ";
+                    cin >> newPassword;
+
+                    userList.createAccount(name, email, newPassword);
+                    cout << "--------------------------------------" << endl; // Separating the output
+                }
+                else if (choice == 3) {
+                    break;
+                }
+                else {
+                    cout << "Invalid choice. Please enter 1, 2, or 3." << endl;
+                }
+            }
+        }
+        else if (choice == 2) {
+            // Admin login
+            if (adminLogin()) {
+                // Admin menu
+                while (true) {
+                    display_admin_menu();
+                    cin >> choice;
+
+                    if (choice == 1) {
+                        userList.displayList();
+                    }
+                    else if (choice == 2) {
+                        int userId;
+                        cout << "Enter User ID to view details: ";
+                        cin >> userId;
+                        userList.displayUser(userId);
+                    }
+                    else if (choice == 3) {
+                        std::cout << "Enter admin password: ";
+                        std::cin >> password;
+                        hotel.changeRoomPrices(password);
+                    }
+                    else if (choice == 4) {
+                        hotel.displayRoomPrices();
+                    }
+                    else if (choice == 5) {
+                        hotel.displayOccupiedByList();
+                    }
+                    else if (choice == 6) {
+                        break;
+                    }
+                    else {
+                        cout << "Invalid choice. Please enter 1, 2, or 3." << endl;
+                    }
+                }
+            }
+            else {
+                cout << "Invalid Admin Password. Access denied." << endl;
+            }
+        }
+        else if (choice == 3) {
+            break;
+        }
+        else {
+            cout << "Invalid choice. Please enter 1, 2, or 3." << endl;
+        }
+    }
+    return 0;
+}
